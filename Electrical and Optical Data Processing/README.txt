@@ -8,7 +8,7 @@ You can then run the program and will prompted for which data run you would like
 Runs include 1,5, and 13 for spontaneous recordings and range from 36 to 52 for variations in optical power, stimulation frequency, duty cycle, and probe retraction.
 AFter running each section, various pdf files will be generated for the BAKS estimator, optical input, eletrical activity (including spike sorting using PCA), and combined data.
 
-Figure 2 from the manuscript used run13 as the data for the spontaneous recording. Run 1 and run 5 were recorded at different depths in the tissue, while run13 was performed at the same location as runs 36-52.
+Figure 2 from the manuscript used run13.mat as the data for the spontaneous recording. Run 1 and run 5 were recorded at different depths in the tissue, while run13 was performed at the same location as runs 36-52.
 
 Figure 3 panels were taken from the output of run47.mat (61uW of optical power).
 
@@ -84,6 +84,8 @@ Run49.mat
 20 pules, 20 Hz, 10% duty cycle, 1s on 1s off
 DPSS laser power: 1.55
 
+
+RETRACTING PIPETTE TO 162 um DEPTH…
 Run50.mat
 20 pules, 20 Hz, 10% duty cycle, 1s on 1s off
 DPSS laser power: 4.03
