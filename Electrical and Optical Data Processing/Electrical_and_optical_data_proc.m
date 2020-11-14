@@ -833,7 +833,9 @@ print('-painters',strcat(filename,sprintf('_%i_uV_%isd_window_waveforms.pdf',rou
 hold off;
 
 %% fit to gaussian clutering
-
+%Note: Sometimes the clustering algorithm may come back with a result that
+%tries to cluster 2 clusters into a single cluster. In this event, just
+%rerun this section to fix it.
 ColOrd = [0,    0.7,    0; 0.3,    0.2,    0.3;0.2314,    0.4784,    0.0157;       0.7686,0.6784,0.5;      0.635,0.078,0.184; 0.494,0.184,0.556; 0.466,0.674,0.188;    0.307,0.47,0.36;0.85,0.325,0.098;         0.929,0.694,0.125;0.301,0.745,0.733;...
     1,0,0;0,1,0;...
      0,0,0;1,0,1;...
@@ -854,7 +856,9 @@ PCA_scores=[score(:,PCx),score(:,PCy)];
 eva_gmdist=evalclusters(PCA_scores,'gmdistribution','CalinskiHarabasz','KList',(1:15));
 
 i=eva_gmdist.OptimalK
-i=2
+% i=2 % in the event of clustering not occuring properly, you can
+% investigate issues by forcing the number of clusters to i.
+
 gm=fitgmdist(PCA_scores,i,'Options', statset('Display','final','MaxIter',100,'TolFun',1e-5));
 
 figure
@@ -865,9 +869,9 @@ fcontour(gmPDF,[-1 1 -1 1])
 
 [idx,nlogL,P,logpdf] = cluster(gm,PCA_scores);
 
-mean(PCA_scores(idx==1),1)
-mean(PCA_scores(idx==2),1)
-if mean(PCA_scores(idx==1),1) > mean(PCA_scores(idx==2),1)
+mean(PCA_scores(idx==1),1);
+mean(PCA_scores(idx==2),1);
+if mean(PCA_scores(idx==1),1) <= mean(PCA_scores(idx==2),1)
     ColOrd = [ 0.3,    0.2,    0.3;0,    0.7,    0];
 else
     ColOrd = [0,    0.7,    0; 0.3,    0.2,    0.3];
@@ -875,22 +879,21 @@ end
 
 figure;
 gscatter(score(:,PCx),score(:,PCy),idx,ColOrd);
-
-
+title('Rerun this section if clusters are not distinct');
 % use optimal cluster size to sort PCA
-close all;
-
 [PCA_avg, PCA_std, PCA_spike_locations]=CalcandPlotClusWavef(PCA_time,spikes_PCA_unnorm,idx,gm,...
     i,spikes_s,ColOrd,PCA_scores,pca_x_lim,pca_y_lim,ymin_volt, ymax_volt,PCx,PCy,filename,sd,thresh);
 
 peak_amps=[PCA_avg(12,:); PCA_std(12,:)]';
+%%
+%create figures using sorted clusters above
 
 if exist('tL','var')==1
     [PCA_trial_spike_locations, PCA_epoch_spike_locations,PCA_trial_spikes_colored, PCA_epoch_spikes_colored]=ColorSpikes(spikes_raster,...
         epoch_spike_times,spike_times_trials_abs, epoch_spike_times_abs_all, spikes_s, i,idx);
 end
 % Plot each component in the PCA+Waveforms plot by itself
-close all;
+
 if exist('tL','var')==1
     PlotClusterWvefms(tE,PCA_time,PCA_avg,PCA_std,PCA_spike_locations,score,idx,gm,ColOrd,pwd_folder,...
         filename, thresh, sd,ymin_volt, ymax_volt,PCx,PCy,pca_x_lim,pca_y_lim,tL,trial_time_ms,pulse_width,...
@@ -900,6 +903,7 @@ else
     filename, thresh, sd,ymin_volt, ymax_volt,PCx,PCy,pca_x_lim,pca_y_lim)
 
 end
+
 %plot colored raster
 close all;
 if exist('tL','var')==1
@@ -916,100 +920,73 @@ else
 end
 Fontsize=20;
 FontsizeAxis=16;
-% if strcmp(filename,'run36+50+51+52') || strcmp(filename,'run42+41+36+43+44')...
-%         || strcmp(filename,'run36+45+46+47+48+49') || strcmp(filename,'run40+36+37+38+39')
-%     
-% else
-        %calc overall spike rate
-    
-    spk_array=logical(spike_array);%find spikes by looking for rising edges 
-    spikes_s=tE(spk_array);
-    beta=length(spikes_s)^(4/5);
-    %from Ahmadi et al
-    alpha=4;
-    [FiringRate, h] = BAKS(spikes_s,tE,alpha,beta);
-
-    %avg_firing=mean(FiringRate,2);
-
-    plot(tE,FiringRate, 'Color', 'k', 'LineWidth', 1);
-
-    ax=ancestor(gca, 'axes');
-    xrule=ax.XAxis;
-    yrule=ax.YAxis;
-
-    xL=xlabel('Time (s)');
-    % xticks([PCA_time(1) round(PCA_time(end))]);
-    yL=ylabel('Spike rate (Hz)');
-
-    xrule.FontSize =FontsizeAxis;
-    yrule.FontSize =FontsizeAxis;
-    xL.FontSize=Fontsize;
-    yL.FontSize=Fontsize;
-    
-    ylim([0 100]);
-    width=8;
-    height=width/3;
-    pos = get(gcf, 'Position');
-    set(gcf, 'Position', [pos(1) pos(2) width*100, height*100]); %<- Set size
-   
-    set(gcf,'color','w');
-    set(gca,'box','off')
-    xlim([0 endpoint]);
+%calc overall spike rate
+spk_array=logical(spike_array);%find spikes by looking for rising edges 
+spikes_s=tE(spk_array);
+beta=length(spikes_s)^(4/5);
+%from Ahmadi et al
+alpha=4;
+[FiringRate, h] = BAKS(spikes_s,tE,alpha,beta);
+plot(tE,FiringRate, 'Color', 'k', 'LineWidth', 1);
+ax=ancestor(gca, 'axes');
+xrule=ax.XAxis;
+yrule=ax.YAxis;
+xL=xlabel('Time (s)');
+% xticks([PCA_time(1) round(PCA_time(end))]);
+yL=ylabel('Spike rate (Hz)');
+xrule.FontSize =FontsizeAxis;
+yrule.FontSize =FontsizeAxis;
+xL.FontSize=Fontsize;
+yL.FontSize=Fontsize;
+ylim([0 100]);
+width=8;
+height=width/3;
+pos = get(gcf, 'Position');
+set(gcf, 'Position', [pos(1) pos(2) width*100, height*100]); %<- Set size
+set(gcf,'color','w');
+set(gca,'box','off')
+xlim([0 endpoint]);
 %     xlim([tE(1) tE(end)]);
-%     saveas(gcf, strcat(filename,sprintf('_%i_uV_%isd_BAKS_full.pdf',round(thresh,0),sd)));
-    print('-painters',strcat(filename,sprintf('_%i_uV_%isd_BAKS_full.pdf',round(thresh,0),sd)),'-dpdf');
+print('-painters',strcat(filename,sprintf('_%i_uV_%isd_BAKS_full.pdf',round(thresh,0),sd)),'-dpdf');
 
-% end 
+%create the same figure as above except with a smaller window
 figure;
 plot(tE,FiringRate, 'Color', 'k', 'LineWidth', 1);
-
-    xlabel('Time (s)');
-    ylabel('Spike Rate (Hz)');
-    ylim([0 100]);
-    width=4;
-    height=2*width/3;
-    pos = get(gcf, 'Position');
-    set(gcf, 'Position', [pos(1) pos(2) width*100, height*100]); %<- Set size
-    set(gca, 'FontSize', 16);
-    set(gcf,'color','w');
-    set(gca,'box','off')
-    xlim([0 endpoint]);
+xlabel('Time (s)');
+ylabel('Spike Rate (Hz)');
+ylim([0 100]);
+width=4;
+height=2*width/3;
+pos = get(gcf, 'Position');
+set(gcf, 'Position', [pos(1) pos(2) width*100, height*100]); %<- Set size
+set(gca, 'FontSize', 16);
+set(gcf,'color','w');
+set(gca,'box','off')
+xlim([0 endpoint]);
 %     xlim([tE(1) tE(end)]);
-%     saveas(gcf, strcat(filename,sprintf('_%i_uV_%isd_BAKS_full.pdf',round(thresh,0),sd)));
-    print('-painters',strcat(filename,sprintf('_%i_uV_%isd_BAKS_full_plot_half_width.pdf',round(thresh,0),sd)),'-dpdf');
+print('-painters',strcat(filename,sprintf('_%i_uV_%isd_BAKS_full_plot_half_width.pdf',round(thresh,0),sd)),'-dpdf');
 
 %% plot Full recording+raster+laser stimulus
 figure;
-% rectangle('Position',[0 0 12.2 size(trials,1)],'FaceColor','#4DBEEE', 'EdgeColor', '#4DBEEE');
 hold on;
 pos1=[0.1 0.65 0.7 0.25];
-%axb=subplot(3,1,1);
 axb=subplot('Position', pos1);
 plot(tE,base, 'k');
 threshline = refline([0 thresh]);
 threshline.Color = 'r';
-%title('Spontaneous Activity');
 xlabel('Time (s)');
 ylabel(['Potential (',char(181),'V)'], 'Interpreter', 'tex');
 ylim([ymin_volt ymax_volt]);
 set(gca,'box','off');
-
-
 pos2=[0.1 0.425 0.7 0.1];
 axr=subplot('Position', pos2);
-
-%plotSpikeRaster(spike_times_trials_abs,'PlotType','vertline','XLimForCell',[tE(1) tE(end)]);
 plotRaster({spikes_s},tE, 'k', 1,1);
 h = gca; h.YAxis.Visible = 'off'; 
-
-%title(sprintf('Raster plot for Run 14, Threshold at %i std',sd));
-
 xlabel('Time (s)');
 ylabel('Raster', 'Color', 'k');
 set(gcf,'color','w');
 set(gca,'box','off')
 hold on;
-
 pos3=[0.1 0.1 0.7 0.2];
 axs=subplot('Position', pos3);
 plot(tL_exp,laser_exp, 'Color', 'k');
@@ -1018,58 +995,34 @@ ylabel('Stimulus');
 set(gca, 'ytick', [0.05,4.9], 'yticklabel', {'Off', 'On'});
 set(gcf,'color','w');
 set(gca,'box','off')
-%title('Optical Stimulus');
 linkaxes([axb, axr,axs], 'x');
-
 hold off;
-
-% p=get(gca, 'Position');
-% p(2)=p(2)*2;
-% set(gca, 'Position',p);
-
-% saveas(gcf, strcat(filename,sprintf('_%i_uV_%isd_record+stim+raster.pdf',round(thresh,0),sd)));
 print('-painters',strcat(filename,sprintf('_%i_uV_%isd_record+stim+raster.pdf',round(thresh,0),sd)),'-dpdf');
 
 %Only stimulation and activity
 
 figure;
-% rectangle('Position',[0 0 12.2 size(trials,1)],'FaceColor','#4DBEEE', 'EdgeColor', '#4DBEEE');
 hold on;
-% pos1=[0.1 0.65 0.7 0.25];
-%axb=subplot(3,1,1);
-% axb=subplot('Position', pos1);
 axb=subplot(2,1,1);
 plot(tE,base, 'k');
 threshline = refline([0 thresh]);
 threshline.Color = 'r';
-%title('Spontaneous Activity');
 xlabel('Time (s)');
 ylabR=ylabel(['Potential (',char(181),'V)'], 'Interpreter', 'tex');
-
 ylim([ymin_volt/1.5 ymax_volt/1.5]);
 set(gca,'box','off');
 
-
-% pos2=[0.1 0.425 0.7 0.1];
-% axs=subplot('Position', pos2);
 axs=subplot(2,1,2);
 plot(tL_exp,laser_exp, 'Color', '#4DBEEE');
 xlabel('Time (s)');
 ylabS=ylabel('Optical Stimulus');
-ylabS.Position= [-4.3410 2.5 -1.000]
+ylabS.Position= [-4.3410 2.5 -1.000];
 set(gca, 'ytick', [0.05,4.9], 'yticklabel', {'Off', 'On'});
 set(gcf,'color','w');
 set(gca,'box','off')
-%title('Optical Stimulus');
 linkaxes([axb,axs], 'x');
 
 hold off;
-
-% p=get(gca, 'Position');
-% p(2)=p(2)*2;
-% set(gca, 'Position',p);
-
-% saveas(gcf, strcat(filename,sprintf('_%i_uV_%isd_record+stim+raster.pdf',round(thresh,0),sd)));
 print('-painters',strcat(filename,sprintf('_%i_uV_%isd_record+stim.pdf',round(thresh,0),sd)),'-dpdf');
 
 Fontsize=20;
@@ -1078,75 +1031,51 @@ FontsizeAxis=16;
 start=150000;
 stop=230000; 
 figure;
-% rectangle('Position',[0 0 12.2 size(trials,1)],'FaceColor','#4DBEEE', 'EdgeColor', '#4DBEEE');
 hold on;
-% pos1=[0.1 0.65 0.7 0.25];
-%axb=subplot(3,1,1);
-% axb=subplot('Position', pos1);
 axb=subplot(2,1,1);
 plot(tE(start:stop),base(start:stop), 'k');
-    ax=ancestor(gca, 'axes');
-    xrule=ax.XAxis;
-    yrule=ax.YAxis;
-    
+ax=ancestor(gca, 'axes');
+xrule=ax.XAxis;
+yrule=ax.YAxis;
 width=5;
-    height=8;
-    pos = get(gcf, 'Position');
-    set(gcf, 'Position', [0 0 width*100, height*100]); %<- Set size
+height=8;
+pos = get(gcf, 'Position');
+set(gcf, 'Position', [0 0 width*100, height*100]); %<- Set size
 threshline = refline([0 thresh]);
 threshline.Color = 'r';
-%title('Spontaneous Activity');
 xL=xlabel('Time (s)');
 ylabR1=ylabel(['Potential (',char(181),'V)'], 'Interpreter', 'tex');
-
-    xrule.FontSize =FontsizeAxis;
-    yrule.FontSize =FontsizeAxis;
-    xL.FontSize=Fontsize;
-    ylabR1.FontSize=Fontsize;
-    
+xrule.FontSize =FontsizeAxis;
+yrule.FontSize =FontsizeAxis;
+xL.FontSize=Fontsize;
+ylabR1.FontSize=Fontsize;
 ylabR1.Position
 ylim([ymin_volt/1.5 ymax_volt/1.5]);
 set(gca,'box','off');
-
-
-% pos2=[0.1 0.425 0.7 0.1];
-% axs=subplot('Position', pos2);
 axs=subplot(2,1,2);
 plot(tL_exp(start:stop),laser_exp(start:stop), 'Color', '#4DBEEE');
-    ax=ancestor(gca, 'axes');
-    xrule=ax.XAxis;
-    yrule=ax.YAxis;
+ax=ancestor(gca, 'axes');
+xrule=ax.XAxis;
+yrule=ax.YAxis;
 
 xL=xlabel('Time (s)');
 ylabS1=ylabel('Optical Stimulus');
-    xrule.FontSize =FontsizeAxis;
-    yrule.FontSize =FontsizeAxis;
-    xL.FontSize=Fontsize;
-    ylabS1.FontSize=Fontsize;
+xrule.FontSize =FontsizeAxis;
+yrule.FontSize =FontsizeAxis;
+xL.FontSize=Fontsize;
+ylabS1.FontSize=Fontsize;
 
 set(gca, 'ytick', [0.05,4.9], 'yticklabel', {'Off', 'On'});
 set(gcf,'color','w');
 set(gca,'box','off')
-%title('Optical Stimulus');
 linkaxes([axb,axs], 'x');
 xlim([7.5 11.5])
-%ylabS1.Position=ylabR1.Position;
-%ylabS1.Position= [6.6382 -24.9999 -1.000]
 hold off;
-
-% p=get(gca, 'Position');
-% p(2)=p(2)*2;
-% set(gca, 'Position',p);
-
-% saveas(gcf, strcat(filename,sprintf('_%i_uV_%isd_record+stim+raster.pdf',round(thresh,0),sd)));
 print('-painters',strcat(filename,sprintf('_%i_uV_%isd_record+stim_selection.pdf',round(thresh,0),sd)),'-dpdf');
 
-%%=========================================================================================
+
 %%===================================================================================================================
-%%===================================================================================================================
-%%===================================================================================================================
-%% ========================== function definitions begin====================================================================================
-%%===================================================================================================================
+%% ========================== function definitions begin=============================================================
 %%===================================================================================================================
 
 function [coeff,score,latent, tsquared, explained, mu, spikes_PCA]=CalculatePCA(spikes_PCA_unnorm,sd,thresh,filename,pca_x_lim,pca_y_lim)
