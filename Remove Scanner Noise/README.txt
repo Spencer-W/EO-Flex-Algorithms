@@ -1,1 +1,1 @@
-
+This script removes the artifact introduced on the electrical channel of the EO-Flex probes while the 2-photon imaging is rastering the beam over the field of view. Data that surpassases a certain threshold is omitted from the final data set, allowing the neural activity within certain time periods to be visible.
