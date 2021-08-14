@@ -1,4 +1,5 @@
 %% monte carlo simulation of light propagation in tissue from EO-Flex
+%%Code adapted from T. Foutz et al, "Theoretical principles underlying optical stimulation of a channelrhodopsin-2 positive pyramidal neuron", J. Neurophys. 107, 3235 (2012)
 close all;
 NA=0.28;
 r0=1.9;
