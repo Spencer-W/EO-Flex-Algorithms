@@ -3,7 +3,7 @@ clear; close all;
 %for laptop
 % pwd1='C:\Users\Spencer\Desktop\Documents\Spencer-salk-comp\2019-5-31-EO-flex_imaging_exps\ProcessedData\Run_13\suite2p\plane0';
 %for tower
-pwd1='C:\Users\Spencer\Dropbox\UCSD Research\Spencer-salk-comp\2019-5-31-EO-flex_imaging_exps\ProcessedData\Run_13\suite2p\plane0';
+pwd1=pwd;
 
 filename='run13';
 
